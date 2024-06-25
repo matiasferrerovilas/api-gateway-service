@@ -1,14 +1,10 @@
-name: M2-CI
+name: Java CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [ main ]
   pull_request:
-    branches: ["main"]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    branches: [ main ]
 
 jobs:
   build:
@@ -16,34 +12,28 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x]
+        java-version: [ '21' ]
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          distribution: 'temurin' # Or 'zulu' or 'adopt' or 'oracle'
+          java-version: ${{ matrix.java-version }}
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
       - name: Install dependencies
-        run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
-      - name: Package App
-        run: npm run package
-      - name: Build Docker image
-        run: |
-          docker build -t m2-front:${{ github.sha }} .
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push Docker image
-        run: |
-          docker tag m2-front:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/m2-front:${{ github.sha }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/m2-front:${{ github.sha }}
+        run: mvn install -DskipTests
+
+      - name: Run tests
+        run: mvn test
