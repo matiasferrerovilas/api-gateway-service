@@ -1,0 +1,56 @@
+server:
+  port: 8081
+
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      default-zone: http://eureka-service:8761/eureka
+
+spring:
+  application:
+    name: api-gateway-service
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: api-password-service
+          uri: lb://ps-service
+          predicates:
+            - Path=/ps/**
+            - Path=/site/**
+      default-filters: TokenRelay
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/SSO
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/SSO
+        registration:
+          spring-cloud-gateway-client:
+            client-id: mferrero
+            client-secret: klhfKreOa8DNhyWJXpQNVRyh6XSVd8df
+            provider: keycloak
+            scope:
+              - openid
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8081/login/oauth2/code/mferrero
+security:
+  oauth2:
+    resource:
+      jwt:
+        key-value: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5vmATWZ09+xs1bBUSCDz5fg9ruozPh6iD4zVqT+Z9M7WhaA4FtnrVjCFRVVA/6BhcT8LlflYtOPt8cQsgXsIU1cEAiD+6TFlKr/NCQFhpWjCHId/dPVHB5nXByeVUWwoRKTamHGgo2K/JmhHk4xvV5hdWV/Za/IZirVlsGxV2kWL2d/2y2ehHrLf8yaM0JdBTiYTrf9rEWR2nP6DAOeg1oj39ng3n8Hxnoz1D39v2i9tPPwr9vmebszArkco3s3nPNcpJPe8hDLICdIf03LrUGhHJN27Dnm2gqxOhb0PygDmha9XLokmk2K2w4NNNGPnVR86oVUoockHjqew0OOmNQIDAQAB
+
